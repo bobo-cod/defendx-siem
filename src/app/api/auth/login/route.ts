@@ -7,19 +7,12 @@ const USERS = [
   {
     id: '1',
     username: 'admin',
-    password: 'admin123',
+    password: 'A,dmin@1~2#^n',
     name: 'Administrator',
     role: 'admin',
     email: 'admin@defendx.local',
   },
-  {
-    id: '2',
-    username: 'analyst',
-    password: 'analyst123',
-    name: 'Security Analyst',
-    role: 'analyst',
-    email: 'analyst@defendx.local',
-  },
+ 
 ];
 
 export async function POST(request: NextRequest) {
