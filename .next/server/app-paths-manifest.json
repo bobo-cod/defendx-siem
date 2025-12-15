@@ -1,0 +1,14 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/wazuh/alerts/route": "app/api/wazuh/alerts/route.js",
+  "/api/wazuh/agents/summary/route": "app/api/wazuh/agents/summary/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/wazuh/alerts/timeline/route": "app/api/wazuh/alerts/timeline/route.js",
+  "/api/wazuh/agents/route": "app/api/wazuh/agents/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/(dashboard)/overview/page": "app/(dashboard)/overview/page.js",
+  "/(dashboard)/agents/page": "app/(dashboard)/agents/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(dashboard)/threat-intel/page": "app/(dashboard)/threat-intel/page.js"
+}
