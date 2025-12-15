@@ -1,0 +1,31 @@
+
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ReactQueryProvider } from '@/lib/providers/react-query-provider';
+import { Toaster } from 'sonner';
+
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'DEFENDX SIEM - Security Information & Event Management',
+  description: 'Modern SIEM dashboard powered by Wazuh',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className="dark">
+      <body className={inter.className}>
+        <ReactQueryProvider>
+          {children}
+          <Toaster position="top-right" richColors />
+        </ReactQueryProvider>
+      </body>
+    </html>
+  );
+}
+

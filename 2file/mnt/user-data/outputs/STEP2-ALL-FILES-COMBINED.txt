@@ -1,0 +1,1208 @@
+===========================================
+DEFENDX SIEM - STEP 2 - ALL FILES
+===========================================
+
+Copy each section below to its corresponding file path.
+
+===========================================
+FILE: src/lib/providers/react-query-provider.tsx
+===========================================
+
+'use client';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { useState, ReactNode } from 'react';
+
+export function ReactQueryProvider({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+            cacheTime: 5 * 60 * 1000,
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: true,
+            retry: 1,
+          },
+          mutations: {
+            retry: 1,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
+
+===========================================
+FILE: src/lib/hooks/use-agents.ts
+===========================================
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { agentsAPI, AgentsParams } from '@/lib/api/agents';
+import { WazuhAgent } from '@/types/wazuh';
+
+export const useAgents = (params?: AgentsParams) => {
+  return useQuery({
+    queryKey: ['agents', params],
+    queryFn: () => agentsAPI.getAgents(params),
+  });
+};
+
+export const useAgent = (agentId: string) => {
+  return useQuery({
+    queryKey: ['agent', agentId],
+    queryFn: () => agentsAPI.getAgent(agentId),
+    enabled: !!agentId,
+  });
+};
+
+export const useAgentsSummary = () => {
+  return useQuery({
+    queryKey: ['agents', 'summary'],
+    queryFn: () => agentsAPI.getAgentsSummary(),
+    refetchInterval: 30000,
+  });
+};
+
+export const useAgentsByStatus = (
+  status: 'active' | 'disconnected' | 'never_connected' | 'pending'
+) => {
+  return useQuery({
+    queryKey: ['agents', 'status', status],
+    queryFn: () => agentsAPI.getAgentsByStatus(status),
+  });
+};
+
+export const useAgentHardware = (agentId: string) => {
+  return useQuery({
+    queryKey: ['agent', agentId, 'hardware'],
+    queryFn: () => agentsAPI.getAgentHardware(agentId),
+    enabled: !!agentId,
+  });
+};
+
+export const useAgentOSInfo = (agentId: string) => {
+  return useQuery({
+    queryKey: ['agent', agentId, 'os'],
+    queryFn: () => agentsAPI.getAgentOSInfo(agentId),
+    enabled: !!agentId,
+  });
+};
+
+export const useAgentPackages = (agentId: string, params?: any) => {
+  return useQuery({
+    queryKey: ['agent', agentId, 'packages', params],
+    queryFn: () => agentsAPI.getAgentPackages(agentId, params),
+    enabled: !!agentId,
+  });
+};
+
+export const useAgentProcesses = (agentId: string, params?: any) => {
+  return useQuery({
+    queryKey: ['agent', agentId, 'processes', params],
+    queryFn: () => agentsAPI.getAgentProcesses(agentId, params),
+    enabled: !!agentId,
+  });
+};
+
+export const useRestartAgent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (agentId: string) => agentsAPI.restartAgent(agentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    },
+  });
+};
+
+export const useDeleteAgent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (agentId: string) => agentsAPI.deleteAgent(agentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    },
+  });
+};
+
+export const useUpgradeAgent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (agentId: string) => agentsAPI.upgradeAgent(agentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    },
+  });
+};
+
+===========================================
+FILE: src/lib/hooks/use-alerts.ts
+===========================================
+
+import { useQuery } from '@tanstack/react-query';
+import { alertsAPI, AlertsParams } from '@/lib/api/alerts';
+
+export const useAlerts = (params?: AlertsParams) => {
+  return useQuery({
+    queryKey: ['alerts', params],
+    queryFn: () => alertsAPI.getAlerts(params),
+  });
+};
+
+export const useAlert = (alertId: string) => {
+  return useQuery({
+    queryKey: ['alert', alertId],
+    queryFn: () => alertsAPI.getAlert(alertId),
+    enabled: !!alertId,
+  });
+};
+
+export const useAlertsSummary = (params?: {
+  date_from?: string;
+  date_to?: string;
+}) => {
+  return useQuery({
+    queryKey: ['alerts', 'summary', params],
+    queryFn: () => alertsAPI.getAlertsSummary(params),
+  });
+};
+
+export const useAlertsByAgent = (agentId: string, params?: AlertsParams) => {
+  return useQuery({
+    queryKey: ['alerts', 'agent', agentId, params],
+    queryFn: () => alertsAPI.getAlertsByAgent(agentId, params),
+    enabled: !!agentId,
+  });
+};
+
+export const useAlertsByLevel = (level: number, params?: AlertsParams) => {
+  return useQuery({
+    queryKey: ['alerts', 'level', level, params],
+    queryFn: () => alertsAPI.getAlertsByLevel(level, params),
+  });
+};
+
+export const useRecentAlerts = (limit: number = 50) => {
+  return useQuery({
+    queryKey: ['alerts', 'recent', limit],
+    queryFn: () => alertsAPI.getRecentAlerts(limit),
+    refetchInterval: 30000,
+  });
+};
+
+export const useAlertCountBySeverity = (params?: {
+  date_from?: string;
+  date_to?: string;
+}) => {
+  return useQuery({
+    queryKey: ['alerts', 'count', 'severity', params],
+    queryFn: () => alertsAPI.getAlertCountBySeverity(params),
+    refetchInterval: 60000,
+  });
+};
+
+export const useTopAgentsByAlerts = (
+  limit: number = 10,
+  params?: { date_from?: string; date_to?: string }
+) => {
+  return useQuery({
+    queryKey: ['alerts', 'top-agents', limit, params],
+    queryFn: () => alertsAPI.getTopAgentsByAlerts(limit, params),
+  });
+};
+
+export const useTopRules = (
+  limit: number = 10,
+  params?: { date_from?: string; date_to?: string }
+) => {
+  return useQuery({
+    queryKey: ['alerts', 'top-rules', limit, params],
+    queryFn: () => alertsAPI.getTopRules(limit, params),
+  });
+};
+
+export const useAlertsTimeline = (params: {
+  date_from: string;
+  date_to: string;
+  interval?: '1h' | '1d' | '1w' | '1M';
+}) => {
+  return useQuery({
+    queryKey: ['alerts', 'timeline', params],
+    queryFn: () => alertsAPI.getAlertsTimeline(params),
+  });
+};
+
+===========================================
+FILE: src/lib/store/auth-store.ts
+===========================================
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface User {
+  id: string;
+  username: string;
+  email?: string;
+  role: string;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  token: string | null;
+  login: (user: User, token: string) => void;
+  logout: () => void;
+  updateUser: (user: Partial<User>) => void;
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      token: null,
+
+      login: (user, token) => {
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+        });
+      },
+
+      logout: () => {
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+        });
+      },
+
+      updateUser: (userData) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...userData } : null,
+        }));
+      },
+    }),
+    {
+      name: 'defendx-auth',
+    }
+  )
+);
+
+===========================================
+FILE: src/lib/store/filters-store.ts
+===========================================
+
+import { create } from 'zustand';
+
+interface DateRange {
+  from: Date;
+  to: Date;
+}
+
+interface FiltersState {
+  dateRange: DateRange;
+  setDateRange: (range: DateRange) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  selectedAgents: string[];
+  setSelectedAgents: (agents: string[]) => void;
+  toggleAgent: (agentId: string) => void;
+  selectedSeverities: string[];
+  setSelectedSeverities: (severities: string[]) => void;
+  toggleSeverity: (severity: string) => void;
+  selectedRules: string[];
+  setSelectedRules: (rules: string[]) => void;
+  resetFilters: () => void;
+}
+
+const initialDateRange = {
+  from: new Date(Date.now() - 24 * 60 * 60 * 1000),
+  to: new Date(),
+};
+
+export const useFiltersStore = create<FiltersState>((set) => ({
+  dateRange: initialDateRange,
+  searchQuery: '',
+  selectedAgents: [],
+  selectedSeverities: [],
+  selectedRules: [],
+
+  setDateRange: (range) => set({ dateRange: range }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSelectedAgents: (agents) => set({ selectedAgents: agents }),
+
+  toggleAgent: (agentId) =>
+    set((state) => ({
+      selectedAgents: state.selectedAgents.includes(agentId)
+        ? state.selectedAgents.filter((id) => id !== agentId)
+        : [...state.selectedAgents, agentId],
+    })),
+
+  setSelectedSeverities: (severities) =>
+    set({ selectedSeverities: severities }),
+
+  toggleSeverity: (severity) =>
+    set((state) => ({
+      selectedSeverities: state.selectedSeverities.includes(severity)
+        ? state.selectedSeverities.filter((s) => s !== severity)
+        : [...state.selectedSeverities, severity],
+    })),
+
+  setSelectedRules: (rules) => set({ selectedRules: rules }),
+
+  resetFilters: () =>
+    set({
+      dateRange: initialDateRange,
+      searchQuery: '',
+      selectedAgents: [],
+      selectedSeverities: [],
+      selectedRules: [],
+    }),
+}));
+
+===========================================
+FILE: src/lib/store/theme-store.ts
+===========================================
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+type Theme = 'light' | 'dark' | 'system';
+
+interface ThemeState {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+}
+
+export const useThemeStore = create<ThemeState>()(
+  persist(
+    (set, get) => ({
+      theme: 'dark',
+
+      setTheme: (theme) => {
+        set({ theme });
+        
+        if (theme === 'system') {
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
+            .matches
+            ? 'dark'
+            : 'light';
+          document.documentElement.classList.toggle('dark', systemTheme === 'dark');
+        } else {
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+        }
+      },
+
+      toggleTheme: () => {
+        const currentTheme = get().theme;
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        get().setTheme(newTheme);
+      },
+    }),
+    {
+      name: 'defendx-theme',
+    }
+  )
+);
+
+===========================================
+FILE: src/lib/utils/cn.ts
+===========================================
+
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+===========================================
+FILE: src/lib/utils/severity.ts
+===========================================
+
+import { AlertSeverity } from '@/types/wazuh';
+
+export function getSeverityFromLevel(level: number): AlertSeverity {
+  if (level >= 12) return 'critical';
+  if (level >= 9) return 'high';
+  if (level >= 5) return 'medium';
+  if (level >= 3) return 'low';
+  return 'info';
+}
+
+export function getSeverityColor(severity: AlertSeverity): string {
+  const colors = {
+    critical: '#dc2626',
+    high: '#f97316',
+    medium: '#eab308',
+    low: '#22c55e',
+    info: '#3b82f6',
+  };
+  return colors[severity];
+}
+
+export function getSeverityBgColor(severity: AlertSeverity): string {
+  const colors = {
+    critical: 'bg-red-500/10 text-red-500 border-red-500/20',
+    high: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    medium: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    low: 'bg-green-500/10 text-green-500 border-green-500/20',
+    info: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  };
+  return colors[severity];
+}
+
+export function getSeverityLabel(severity: AlertSeverity): string {
+  return severity.charAt(0).toUpperCase() + severity.slice(1);
+}
+
+===========================================
+FILE: src/lib/utils/date.ts
+===========================================
+
+import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
+
+export function formatDate(date: string | Date): string {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date;
+  return isValid(parsedDate) ? format(parsedDate, 'MMM dd, yyyy HH:mm:ss') : 'Invalid date';
+}
+
+export function formatRelativeTime(date: string | Date): string {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date;
+  return isValid(parsedDate)
+    ? formatDistanceToNow(parsedDate, { addSuffix: true })
+    : 'Unknown';
+}
+
+export function formatShortDate(date: string | Date): string {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date;
+  return isValid(parsedDate) ? format(parsedDate, 'MMM dd, HH:mm') : 'Invalid';
+}
+
+export function formatTime(date: string | Date): string {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date;
+  return isValid(parsedDate) ? format(parsedDate, 'HH:mm:ss') : 'Invalid';
+}
+
+===========================================
+FILE: src/lib/utils/format.ts
+===========================================
+
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('en-US').format(num);
+}
+
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+export function formatPercentage(value: number, total: number): string {
+  if (total === 0) return '0%';
+  return ((value / total) * 100).toFixed(1) + '%';
+}
+
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+export function capitalizeFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export function getAgentStatusColor(
+  status: 'active' | 'disconnected' | 'never_connected' | 'pending'
+): string {
+  const colors = {
+    active: 'text-green-500',
+    disconnected: 'text-red-500',
+    never_connected: 'text-gray-500',
+    pending: 'text-yellow-500',
+  };
+  return colors[status] || 'text-gray-500';
+}
+
+export function getAgentStatusBadge(
+  status: 'active' | 'disconnected' | 'never_connected' | 'pending'
+): string {
+  const badges = {
+    active: 'bg-green-500/10 text-green-500 border-green-500/20',
+    disconnected: 'bg-red-500/10 text-red-500 border-red-500/20',
+    never_connected: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
+    pending: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+  };
+  return badges[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+}
+
+===========================================
+FILE: src/app/layout.tsx (REPLACE EXISTING)
+===========================================
+
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ReactQueryProvider } from '@/lib/providers/react-query-provider';
+import { Toaster } from 'sonner';
+
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'DEFENDX SIEM - Security Information & Event Management',
+  description: 'Modern SIEM dashboard powered by Wazuh',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className="dark">
+      <body className={inter.className}>
+        <ReactQueryProvider>
+          {children}
+          <Toaster position="top-right" richColors />
+        </ReactQueryProvider>
+      </body>
+    </html>
+  );
+}
+
+===========================================
+FILE: src/app/(dashboard)/layout.tsx
+===========================================
+
+import Sidebar from '@/components/layout/Sidebar';
+import Header from '@/components/layout/Header';
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+===========================================
+FILE: src/components/layout/Sidebar.tsx
+===========================================
+
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils/cn';
+import {
+  LayoutDashboard,
+  Server,
+  AlertTriangle,
+  Shield,
+  FileSearch,
+  Bug,
+  Network,
+  Search,
+  BarChart3,
+  Settings,
+  ChevronLeft,
+} from 'lucide-react';
+import { useState } from 'react';
+
+const menuItems = [
+  { icon: LayoutDashboard, label: 'Overview', href: '/overview' },
+  { icon: Server, label: 'Agents', href: '/agents' },
+  { icon: AlertTriangle, label: 'Alerts', href: '/alerts' },
+  { icon: Shield, label: 'MITRE ATT&CK', href: '/mitre' },
+  { icon: FileSearch, label: 'File Integrity', href: '/fim' },
+  { icon: Bug, label: 'Vulnerabilities', href: '/vulnerabilities' },
+  { icon: Network, label: 'Network', href: '/network' },
+  { icon: Search, label: 'Search', href: '/search' },
+  { icon: BarChart3, label: 'Dashboards', href: '/dashboards' },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside
+      className={cn(
+        'bg-card border-r border-border transition-all duration-300 flex flex-col',
+        collapsed ? 'w-16' : 'w-64'
+      )}
+    >
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        {!collapsed && (
+          <div className="flex items-center gap-2">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="font-bold text-lg">DEFENDX</h1>
+              <p className="text-xs text-muted-foreground">SIEM Platform</p>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-2 hover:bg-accent rounded-lg transition-colors"
+        >
+          <ChevronLeft
+            className={cn(
+              'h-4 w-4 transition-transform',
+              collapsed && 'rotate-180'
+            )}
+          />
+        </button>
+      </div>
+
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+                'hover:bg-accent',
+                isActive && 'bg-primary text-primary-foreground',
+                collapsed && 'justify-center'
+              )}
+              title={collapsed ? item.label : undefined}
+            >
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-border">
+        <Link
+          href="/settings"
+          className={cn(
+            'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent',
+            collapsed && 'justify-center'
+          )}
+          title={collapsed ? 'Settings' : undefined}
+        >
+          <Settings className="h-5 w-5 flex-shrink-0" />
+          {!collapsed && <span className="text-sm font-medium">Settings</span>}
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+===========================================
+FILE: src/components/layout/Header.tsx
+===========================================
+
+'use client';
+
+import { Bell, Moon, Sun, User } from 'lucide-react';
+import { useThemeStore } from '@/lib/store/theme-store';
+
+export default function Header() {
+  const { theme, toggleTheme } = useThemeStore();
+
+  return (
+    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <h2 className="text-xl font-semibold">Dashboard</h2>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={toggleTheme}
+          className="p-2 hover:bg-accent rounded-lg transition-colors"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </button>
+
+        <button className="p-2 hover:bg-accent rounded-lg transition-colors relative">
+          <Bell className="h-5 w-5" />
+          <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
+        </button>
+
+        <button className="p-2 hover:bg-accent rounded-lg transition-colors">
+          <User className="h-5 w-5" />
+        </button>
+      </div>
+    </header>
+  );
+}
+
+===========================================
+FILE: src/components/ui/card.tsx
+===========================================
+
+import * as React from 'react';
+import { cn } from '@/lib/utils/cn';
+
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      'rounded-lg border border-border bg-card text-card-foreground shadow-sm',
+      className
+    )}
+    {...props}
+  />
+));
+Card.displayName = 'Card';
+
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn('flex flex-col space-y-1.5 p-6', className)}
+    {...props}
+  />
+));
+CardHeader.displayName = 'CardHeader';
+
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      'text-2xl font-semibold leading-none tracking-tight',
+      className
+    )}
+    {...props}
+  />
+));
+CardTitle.displayName = 'CardTitle';
+
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn('text-sm text-muted-foreground', className)}
+    {...props}
+  />
+));
+CardDescription.displayName = 'CardDescription';
+
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+));
+CardContent.displayName = 'CardContent';
+
+const CardFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn('flex items-center p-6 pt-0', className)}
+    {...props}
+  />
+));
+CardFooter.displayName = 'CardFooter';
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+
+===========================================
+FILE: src/components/ui/badge.tsx
+===========================================
+
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils/cn';
+
+const badgeVariants = cva(
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  {
+    variants: {
+      variant: {
+        default:
+          'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
+        secondary:
+          'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        destructive:
+          'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
+        outline: 'text-foreground',
+        critical: 'border-transparent bg-red-500/10 text-red-500 border border-red-500/20',
+        high: 'border-transparent bg-orange-500/10 text-orange-500 border border-orange-500/20',
+        medium: 'border-transparent bg-yellow-500/10 text-yellow-500 border border-yellow-500/20',
+        low: 'border-transparent bg-green-500/10 text-green-500 border border-green-500/20',
+        info: 'border-transparent bg-blue-500/10 text-blue-500 border border-blue-500/20',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
+
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  );
+}
+
+export { Badge, badgeVariants };
+
+===========================================
+FILE: src/app/page.tsx (REPLACE EXISTING)
+===========================================
+
+import { redirect } from 'next/navigation';
+
+export default function HomePage() {
+  redirect('/overview');
+}
+
+===========================================
+FILE: src/app/(dashboard)/overview/page.tsx
+===========================================
+
+'use client';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useAgentsSummary } from '@/lib/hooks/use-agents';
+import { useRecentAlerts, useAlertCountBySeverity } from '@/lib/hooks/use-alerts';
+import { formatNumber } from '@/lib/utils/format';
+import { formatRelativeTime } from '@/lib/utils/date';
+import { getSeverityFromLevel, getSeverityBgColor } from '@/lib/utils/severity';
+import {
+  Server,
+  AlertTriangle,
+  Shield,
+  Activity,
+} from 'lucide-react';
+
+export default function OverviewPage() {
+  const { data: agentsSummary, isLoading: agentsLoading } = useAgentsSummary();
+  const { data: alertsSeverity, isLoading: alertsLoading } = useAlertCountBySeverity();
+  const { data: recentAlerts } = useRecentAlerts(10);
+
+  if (agentsLoading || alertsLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="spinner h-8 w-8 border-4 rounded-full mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const agentsData = agentsSummary?.data?.affected_items?.[0] || {};
+  const alertsData = alertsSeverity || { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
+
+  return (
+    <div className="space-y-6 fade-in">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Security Overview</h1>
+        <p className="text-muted-foreground">
+          Real-time monitoring and threat detection
+        </p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
+            <Server className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatNumber(agentsData.total || 0)}
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="default" className="bg-green-500/10 text-green-500 border-green-500/20">
+                {formatNumber(agentsData.active || 0)} Active
+              </Badge>
+              {agentsData.disconnected > 0 && (
+                <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20">
+                  {formatNumber(agentsData.disconnected || 0)} Offline
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Alerts</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatNumber(alertsData.total)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Last 24 hours</p>
+            <div className="flex items-center gap-1 mt-2 text-sm">
+              {alertsData.total > 0 ? (
+                <>
+                  <Shield className="h-4 w-4 text-red-500" />
+                  <span className="text-red-500">Active threats</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="h-4 w-4 text-green-500" />
+                  <span className="text-green-500">All clear</span>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow border-red-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Critical Alerts</CardTitle>
+            <Shield className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              {formatNumber(alertsData.critical)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Requires immediate attention
+            </p>
+            {alertsData.critical > 0 && (
+              <Badge variant="critical" className="mt-2">
+                Action Required
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Security Score</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-500">
+              {alertsData.critical === 0 && alertsData.high < 5 ? '95' : alertsData.critical > 0 ? '65' : '80'}
+              <span className="text-lg text-muted-foreground">/100</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Overall health</p>
+            <div className="w-full bg-secondary rounded-full h-2 mt-2">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all"
+                style={{
+                  width: `${alertsData.critical === 0 && alertsData.high < 5 ? 95 : alertsData.critical > 0 ? 65 : 80}%`,
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Alerts by Severity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <span className="text-sm font-medium">Critical</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    {formatNumber(alertsData.critical)}
+                  </span>
+                  <div className="w-32 bg-secondary rounded-full h-2">
+                    <div
+                      className="bg-red-500 h-2 rounded-full"
+                      style={{
+                        width: `${alertsData.total > 0 ? (alertsData.critical / alertsData.total) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-500" />
+                  <span className="text-sm font-medium">High</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    {formatNumber(alertsData.high)}
+                  </span>
+                  <div className="w-32 bg-secondary rounded-full h-2">
+                    <div
+                      className="bg-orange-500 h-2 rounded-full"
+                      style={{
+                        width: `${alertsData.total > 0 ? (alertsData.high / alertsData.total) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <span className="text-sm font-medium">Medium</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    {formatNumber(alertsData.medium)}
+                  </span>
+                  <div className="w-32 bg-secondary rounded-full h-2">
+                    <div
+                      className="bg-yellow-500 h-2 rounded-full"
+                      style={{
+                        width: `${alertsData.total > 0 ? (alertsData.medium / alertsData.total) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <span className="text-sm font-medium">Low</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    {formatNumber(alertsData.low)}
+                  </span>
+                  <div className="w-32 bg-secondary rounded-full h-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{
+                        width: `${alertsData.total > 0 ? (alertsData.low / alertsData.total) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Alerts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentAlerts?.data?.affected_items?.slice(0, 5).map((alert: any) => {
+                const severity = getSeverityFromLevel(alert._source.rule.level);
+                return (
+                  <div
+                    key={alert._id}
+                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                  >
+                    <Badge
+                      variant={severity as any}
+                      className={getSeverityBgColor(severity)}
+                    >
+                      {alert._source.rule.level}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {alert._source.rule.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Agent: {alert._source.agent.name} •{' '}
+                        {formatRelativeTime(alert._source.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              }) || (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No recent alerts
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-green-500/20">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="h-3 w-3 rounded-full bg-green-500" />
+                <div className="absolute inset-0 h-3 w-3 rounded-full bg-green-500 animate-ping opacity-75" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Connected to Wazuh Manager</p>
+                <p className="text-xs text-muted-foreground">
+                  Real-time monitoring active
+                </p>
+              </div>
+            </div>
+            <Badge variant="default" className="bg-green-500/10 text-green-500 border-green-500/20">
+              Live
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+===========================================
+END OF ALL FILES
+===========================================
