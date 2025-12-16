@@ -76,7 +76,7 @@ export default function AddAgentModal({ isOpen, onClose }: AddAgentModalProps) {
         download: `# Download Wazuh Agent
 curl -so wazuh-agent.deb https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.0-1_amd64.deb`,
         install: `# Install agent with manager configuration
-sudo WAZUH_MANAGER='${WAZUH_MANAGER_IP}' WAZUH_AGENT_NAME='${agentName}' dpkg -i ./wazuh-agent.deb`,
+sudo WAZUH_MANAGER='${WAZUH_MANAGER_IP}' WAZUH_AGENT_NAME='${agentName}' dpkg -i ./wazuh-agent_4.7.0-1_amd64.deb`,
         import: `# Import agent key interactively
 sudo /var/ossec/bin/manage_agents
 
